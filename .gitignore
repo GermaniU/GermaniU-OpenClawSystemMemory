@@ -1,0 +1,28 @@
+# Build artifacts
+*.log
+.tmp/
+__pycache__/
+*.pyc
+node_modules/
+package-lock.json
+
+# Temporary files
+EOF
+ENDOFPYTHON
+P1
+PYEOF
+PY2EOF
+SECPYTHON
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test outputs
+tests/*.log
