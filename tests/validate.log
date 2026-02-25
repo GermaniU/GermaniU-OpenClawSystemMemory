@@ -1,0 +1,45 @@
+TAP version 13
+# Memory Auto-Sync Pipeline Integration Tests
+# Started: 2026-02-25T05:10:07+00:00
+# QDRANT_URL: localhost:6333
+# EMBEDDING_URL: http://localhost:11436
+
+1..5
+# Setting up test environment...
+# Test directory: /tmp/memory-auto-sync-test-8904
+# Running: Qdrant connectivity check
+ok 1 - Qdrant connectivity check
+# Qdrant is healthy at localhost:6333
+# Running: Embedding proxy response (llava:7b or compatible)
+ok 2 - Embedding proxy response (llava:7b or compatible)
+# Embedding dimension: 768
+# Running: sync-memory.sh with mock data
+not ok 3 - sync-memory.sh with mock data
+  ---
+  reason: Script exited with code 2
+  ---
+# Output: /root/workspace/scratch/2026-02-25/memory-auto-sync/tests/../sync-memory.sh: line 207: syntax error near unexpected token `('
+# Running: memory_add hook via mcporter
+not ok 4 - memory_add hook via mcporter
+  ---
+  reason: Document added but verification failed
+  ---
+# Running: End-to-end: Create markdown → Sync → Verify in Qdrant
+# Step 1: Created markdown file
+# Step 2: Created Qdrant collection
+# Step 3: Document synced to Qdrant
+not ok 5 - End-to-end: Create markdown → Sync → Verify in Qdrant
+  ---
+  reason: Search completed but content not found in results
+  ---
+# Response: MCP error -32602: Tool search not found
+# Cleaning up test environment...
+# Cleanup complete
+
+# Test Summary
+# Total: 5
+# Passed: 2
+# Failed: 3
+# Completed: 2026-02-25T05:10:15+00:00
+# Cleaning up test environment...
+# Cleanup complete
