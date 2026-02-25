@@ -15,7 +15,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MEMORY_DIR="/root/workspace/memory"
 QDRANT_URL="http://localhost:6333"
-EMBEDDING_URL="http://localhost:11436/v1/embeddings"
+EMBEDDING_URL="http://localhost:11434/v1/embeddings"
+EMBEDDING_MODEL="llava:7b"
+EMBEDDING_PROXY_URL="http://localhost:11434"
 COLLECTION_NAME="memory_facts"
 LOG_FILE="$SCRIPT_DIR/sync.log"
 VECTOR_SIZE=4096
@@ -201,7 +203,7 @@ print(json.dumps(sections))
     local processed_file="$TMP_DIR/${filename}.processed.json"
     echo "$sections_data" > "$processed_file"
     
-    python3 - "$processed_file" "$filename" "$source_file" "$COLLECTION_NAME" "$EMBEDDING_MODEL" "$EMBEDDING_PROXY_URL" "$QDRANT_URL" <<'PY2EOF'
+    python3 - "$processed_file" "$filename" "$filepath" "$COLLECTION_NAME" "$EMBEDDING_MODEL" "$EMBEDDING_PROXY_URL" "$QDRANT_URL" 2>&1 <<'PY2EOF'
 import json
 import hashlib
 import uuid
@@ -292,30 +294,6 @@ for section in sections:
         print(f"SECTION_ERROR: {e}", file=sys.stderr)
 
 print(f"SUMMARY: {file_success}/{file_sections}")
-PY2EOF
-
-
-NAMESPACE_UUID = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-
-for section in sections:
-    header = section['header']
-    content = section['content']
-    source = section['file']
-    
-    # Limitar contenido
-    content_emb = content[:4000] if len(content) > 4000 else content
-    
-    # Hash del contenido
-    content_hash = hashlib.sha256(content_emb.encode()).hexdigest()
-    
-    # UUID v5
-    name = f"{source}:{header}:{content_hash}"
-    uid = uuid.uuid5(NAMESPACE_UUID, name)
-    
-    # Escape para bash
-    safe_content = content_emb.replace('\"', '\\\\\"').replace('\n', '\\n')
-    
-    print(f"SECTION|{uid}|{content_hash}|{header}|{source}|{safe_content}")
 PY2EOF
     
     while IFS='|' read -r type uuid content_hash header source content; do
