@@ -42,7 +42,6 @@ Automatizar el flujo de memoria desde archivos `/memory/*.md` hacia Qdrant para 
 | **qa-tester** | Claude Sonnet 4.6 | validate.sh tests | ✅ 60% |
 
 **Modelo usado:** `anthropic/claude-sonnet-4-6`
-**Runtime total:** 3m 22s (backend) + tiempo paralelo
 
 ## 🚀 Ventajas para OpenClaw
 
