@@ -1,0 +1,57 @@
+{
+  "name": "@openclaw/memory-hook",
+  "version": "1.0.0",
+  "description": "MCP Server para OpenClaw - Tools para agregar y sincronizar memorias con Qdrant",
+  "type": "module",
+  "main": "memory-hook.js",
+  "bin": {
+    "memory-hook": "./memory-hook.js"
+  },
+  "scripts": {
+    "start": "node memory-hook.js",
+    "dev": "node --watch memory-hook.js",
+    "test": "node --test test/*.test.js",
+    "lint": "eslint memory-hook.js",
+    "check-health": "curl -s http://localhost:6333/healthz || echo 'Qdrant no disponible'"
+  },
+  "keywords": [
+    "mcp",
+    "openclaw",
+    "qdrant",
+    "memory",
+    "semantic-search",
+    "llm",
+    "vector-store"
+  ],
+  "author": "OpenClaw",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openclaw/memory-hook.git"
+  },
+  "bugs": {
+    "url": "https://github.com/openclaw/memory-hook/issues"
+  },
+  "homepage": "https://github.com/openclaw/memory-hook#readme",
+  "mcp": {
+    "tools": [
+      {
+        "name": "memory_add",
+        "description": "Agregar una memoria a Qdrant para recuperación semántica"
+      },
+      {
+        "name": "memory_sync",
+        "description": "Sincronizar un archivo markdown con Qdrant"
+      }
+    ]
+  }
+}

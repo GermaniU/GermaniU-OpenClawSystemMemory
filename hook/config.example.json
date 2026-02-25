@@ -1,0 +1,23 @@
+{
+  "qdrantUrl": "http://localhost:6333",
+  "defaultCollection": "memory_incidents",
+  "embeddingModel": "nomic-embed-text",
+  "embeddingProxyUrl": "http://localhost:18789",
+  "collections": {
+    "memory_incidents": {
+      "vectorSize": 768,
+      "distance": "Cosine",
+      "description": "Incidentes, bugs y problemas resueltos"
+    },
+    "memory_facts": {
+      "vectorSize": 768,
+      "distance": "Cosine",
+      "description": "Hechos, conocimientos y datos importantes"
+    },
+    "memory_tasks": {
+      "vectorSize": 768,
+      "distance": "Cosine",
+      "description": "Tareas pendientes y TODOs"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+node_modules/
+*.log
+.DS_Store
+.env
+.env.local
+*.bundle.js
+*.bundle.js.map
+dist/
+build/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.test-results/
+coverage/
