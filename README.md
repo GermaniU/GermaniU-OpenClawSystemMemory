@@ -1,13 +1,13 @@
 # Auto-Sync Pipeline: Episodic → Semantic Memory for OpenClaw
 
-[![GitHub](https://img.shields.io/badge/GitHub-Germaniu%2FOpenClawSystemMemory-blue)](https://github.com/GermaniU/OpenClawSystemMemory)
+[![GitHub](https://img.shields.io/badge/GitHub-Germaniu%2FOpenClawSystemMemory-blue)](https://github.com/GermaniU/GermaniU-OpenClawSystemMemory)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-green)](https://modelcontextprotocol.io)
 
 ## 🎯 Objetivo
 Automatizar el flujo de memoria desde archivos `/memory/*.md` hacia Qdrant para búsqueda semántica en OpenClaw.
 
 ## 📦 Repository
-**GitHub:** https://github.com/GermaniU/OpenClawSystemMemory
+**GitHub:** https://github.com/GermaniU/GermaniU-OpenClawSystemMemory
 
 ## 🤖 OpenClaw Integration
 
