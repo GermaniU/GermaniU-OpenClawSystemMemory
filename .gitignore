@@ -1,3 +1,9 @@
+# Security - Cron jobs and system files (keep only RAG core)
+*.sh
+!/sync-memory.sh
+!tests/validate.sh
+*.py
+
 # Build artifacts
 *.log
 .tmp/
@@ -5,14 +11,6 @@ __pycache__/
 *.pyc
 node_modules/
 package-lock.json
-
-# Temporary files
-EOF
-ENDOFPYTHON
-P1
-PYEOF
-PY2EOF
-SECPYTHON
 
 # OS files
 .DS_Store
@@ -24,5 +22,11 @@ Thumbs.db
 *.swp
 *.swo
 
-# Test outputs
-tests/*.log
+# Temporary files
+EOF
+ENDOFPYTHON
+P1
+PYEOF
+PY2EOF
+SECPYTHON
+*~
