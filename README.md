@@ -1,12 +1,85 @@
-# Auto-Sync Pipeline: Memory Episódica → Semántica
+# Auto-Sync Pipeline: Episodic → Semantic Memory for OpenClaw
 
 [![GitHub](https://img.shields.io/badge/GitHub-Germaniu%2FOpenClawSystemMemory-blue)](https://github.com/GermaniU/OpenClawSystemMemory)
+[![MCP](https://img.shields.io/badge/MCP-Compatible-green)](https://modelcontextprotocol.io)
 
-## Objetivo
+## 🎯 Objetivo
 Automatizar el flujo de memoria desde archivos `/memory/*.md` hacia Qdrant para búsqueda semántica en OpenClaw.
 
-## Repository
+## 📦 Repository
 **GitHub:** https://github.com/GermaniU/OpenClawSystemMemory
+
+## 🤖 OpenClaw Integration
+
+### Cómo OpenClaw usa este sistema
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  OpenClaw Agent │────▶│  Memory Hook    │────▶│  Qdrant         │
+│  (Claude 4.6)   │     │  (MCP Server)   │     │  (Semantic DB)  │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+         │                                               │
+         │ memory_add()                                  │
+         │ memory_sync()                                 ▼
+         │                                       ┌─────────────────┐
+         │                                       │  Vector Search   │
+         │                                       │  4096 dims       │
+         │                                       └─────────────────┘
+         ▼
+┌─────────────────┐
+│  /memory/*.md   │
+│  (Episodic)     │
+└─────────────────┘
+```
+
+### Agentes que colaboraron
+
+| Rol | Agente | Tarea | Status |
+|-----|--------|-------|--------|
+| **lead-orchestrator** | Claude Sonnet 4.6 | Coordination, planning, validation | ✅ |
+| **devops-infra** | Claude Sonnet 4.6 | sync-memory.sh (400 líneas) | ✅ |
+| **backend-coder** | Claude Sonnet 4.6 | memory-hook.js MCP server (580 líneas) | ✅ |
+| **qa-tester** | Claude Sonnet 4.6 | validate.sh tests | ✅ 60% |
+
+**Modelo usado:** `anthropic/claude-sonnet-4-6`
+**Runtime total:** 3m 22s (backend) + tiempo paralelo
+
+## 🚀 Ventajas para OpenClaw
+
+### 1. Memoria Híbrida (Dual-Layer)
+- **Episódica:** Archivos Markdown (`/memory/*.md`) - human-readable
+- **Semántica:** Qdrant vectors - searchable por similitud
+- **Persistencia:** Git + Filesystem para backup
+
+### 2. Búsqueda Semántica Real
+```javascript
+// En OpenClaw:
+memory_search("C+ Architecture sessions_spawn")
+// → Retorna facts similares del contexto
+```
+
+### 3. MCP Integration Nativa
+```javascript
+// Tool disponible vía OpenClaw MCP:
+mcporter call memory memory_add \
+  text="Claude API configurado" \
+  collection="memory_facts"
+```
+
+### 4. Deduplicación Automática
+- UUID v5 basado en content hash
+- Evita duplicados al sincronizar
+- Incremental: solo cambios nuevos
+
+### 5. Embeddings Locales
+- llava:7b (4096 dims) via localhost:11436
+- **Sin costo de API** (Ollama local)
+- Sin latencia de red
+
+### 6. C+ Architecture Compliance
+- **switch_mode:** Simple sync (rol devops)
+- **sessions_spawn:** Parallel development (3 roles)
+- **CONFIRMO:** Validation antes de cambios
 
 ## Componentes
 | Componente | Archivo | Líneas | Descripción |

@@ -197,14 +197,103 @@ print(json.dumps(sections))
     local sections_data
     sections_data=$(cat "$sections_file")
     
-    # Procesar cada sección
-    local processed_file="$TMP_DIR/${filename}.processed"
-    python3 > "$processed_file" <<PY2EOF
+    # Procesar cada sección - guardar JSON en archivo temporal
+    local processed_file="$TMP_DIR/${filename}.processed.json"
+    echo "$sections_data" > "$processed_file"
+    
+    python3 - "$processed_file" "$filename" "$source_file" "$COLLECTION_NAME" "$EMBEDDING_MODEL" "$EMBEDDING_PROXY_URL" "$QDRANT_URL" <<'PY2EOF'
 import json
 import hashlib
 import uuid
+import sys
+import urllib.request
+import urllib.error
 
-sections = json.loads('''$sections_data''')
+sections_file = sys.argv[1]
+filename = sys.argv[2]
+source_file = sys.argv[3]
+collection_name = sys.argv[4]
+embedding_model = sys.argv[5]
+embedding_proxy_url = sys.argv[6]
+qdrant_url = sys.argv[7]
+
+with open(sections_file, 'r') as f:
+    sections = json.load(f)
+
+NAMESPACE_UUID = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+file_sections = 0
+file_success = 0
+
+for section in sections:
+    try:
+        header = section['header']
+        content = section['content']
+        source = section['file']
+        
+        content_emb = content[:4000] if len(content) > 4000 else content
+        content_hash = hashlib.sha256(content_emb.encode()).hexdigest()[:16]
+        
+        section_id = str(uuid.uuid5(NAMESPACE_UUID, f"{filename}-{header}-{content_hash}"))
+        file_sections += 1
+        
+        # Generar embedding
+        embedding_payload = json.dumps({"model": embedding_model, "input": content_emb}).encode()
+        req = urllib.request.Request(
+            f"{embedding_proxy_url}/v1/embeddings",
+            data=embedding_payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                embedding_data = json.loads(response.read().decode())
+                vector = embedding_data['data'][0]['embedding']
+        except Exception as e:
+            print(f"EMBEDDING_ERROR: {e}", file=sys.stderr)
+            continue
+        
+        synced_at = "2026-02-25T05:25:00Z"
+        
+        # Upsert a Qdrant
+        point_data = {
+            "points": [{
+                "id": section_id,
+                "vector": vector,
+                "payload": {
+                    "source": source_file,
+                    "header": header,
+                    "content": content[:500],
+                    "content_hash": content_hash,
+                    "synced_at": synced_at
+                }
+            }]
+        }
+        
+        qdrant_req = urllib.request.Request(
+            f"{qdrant_url}/collections/{collection_name}/points?wait=true",
+            data=json.dumps(point_data).encode(),
+            headers={"Content-Type": "application/json"},
+            method="PUT"
+        )
+        
+        try:
+            with urllib.request.urlopen(qdrant_req, timeout=10) as response:
+                result = json.loads(response.read().decode())
+                if result.get('status') == 'ok':
+                    file_success += 1
+                    print(f"SUCCESS: {section_id}")
+                else:
+                    print(f"FAILED: {section_id} - {result}", file=sys.stderr)
+        except Exception as e:
+            print(f"QDRANT_ERROR: {e}", file=sys.stderr)
+            
+    except Exception as e:
+        print(f"SECTION_ERROR: {e}", file=sys.stderr)
+
+print(f"SUMMARY: {file_success}/{file_sections}")
+PY2EOF
+
 
 NAMESPACE_UUID = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
