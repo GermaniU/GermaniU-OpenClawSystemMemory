@@ -238,6 +238,43 @@ hook/
 - `@modelcontextprotocol/sdk`: ^1.0.4
 - Node.js >= 18.0.0
 
+## 🧠 Embeddings
+
+**Modelo:** `nomic-embed-text` (por defecto)  
+**Dimensión:** 768  
+**Distance:** Cosine
+
+**Otros modelos disponibles:**
+- `mxbai-embed-large`: 1024 dimensiones (mejor para embeddings largos)
+
+**Configuración:**
+```bash
+export EMBEDDING_MODEL="nomic-embed-text"  # default
+# O
+export EMBEDDING_MODEL="mxbai-embed-large"  # 1024 dims
+```
+
+## 👥 Roles Participantes en este Desarrollo
+
+Este trabajo fue realizado con los siguientes roles:
+
+| Rol | Responsabilidad |
+|------|-----------------|
+| `builder-orchestrator` | Coordinación, delegación, planificación del trabajo |
+| `backend-coder` | Implementación de 5 herramientas (add, search, delete, stats, sync) |
+| `qa-tester` | Validación completa (6 tests de QA) |
+| `code-reviewer` | Revisión de código (0 bloqueadores, 4 sugerencias opcionales) |
+
+**Flujo de trabajo C+:**
+1. Investigación del problema (bug 405 en memory_add)
+2. Implementación (5 herramientas en memory-hook.js)
+3. Validación QA (6 tests de regresión)
+4. Code review (revisión de bugs y seguridad)
+5. Documentación (README completo con ejemplos)
+6. Commit + push a GitHub
+
+**Repositorio:** https://github.com/GermaniU/GermaniU-OpenClawSystemMemory.git
+
 ## 🔍 Health Check
 
 ```bash
