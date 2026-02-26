@@ -4,11 +4,11 @@
 
 | Componente | Líneas | Estado | Verificación |
 |------------|--------|--------|--------------|
-| sync-memory.sh | 400 | ✅ **COMPLETO** | Ejecutable, llava:7b, Qdrant upsert |
-| hook/memory-hook.js | 577 | ✅ **COMPLETO** | MCP server, memory_add, memory_sync |
+| sync-memory.sh | 400 | ✅ **COMPLETO** | Ejecutable, nomic-embed-text, Qdrant upsert |
+| hook/memory-hook.js | 580 | ✅ **COMPLETO** | MCP server (5 herramientas) |
 | tests/validate.sh | - | ⏳ **EN DESARROLLO** | qa-tester activo (2m+) |
 
-**Git**: 635fab8 - "feat(auto-sync): Memory pipeline episodic → semantic"
+**Git**: da6bb45 - "docs: sintetizar y resumir README principal del proyecto"
 
 ---
 
@@ -21,8 +21,8 @@
 
 # Características:
 ✓ Extracción de headers (##, ###)
-✓ UUID v5 con content hash (deduplicación)
-✓ Embeddings llava:7b (4096 dims)
+✓ UUID v4 con generador estándar
+✓ Embeddings nomic-embed-text (768 dims)
 ✓ Batch processing
 ✓ Logging completo
 ```
@@ -37,6 +37,15 @@ tools: {
   },
   memory_sync: {   // Sync archivo markdown
     args: [file_path, date]
+  },
+  memory_search: { // Búsqueda semántica
+    args: [collection, text, limit, score_threshold, filter]
+  },
+  memory_delete: { // Eliminar memoria
+    args: [collection, point_id, query, limit, score_threshold]
+  },
+  memory_stats: { // Estadísticas de colección
+    args: [collection]
   }
 }
 ```
@@ -61,14 +70,14 @@ cd /root/workspace/scratch/2026-02-25/memory-auto-sync
 // En sesión OpenClaw:
 sessions_send({
   sessionKey: "...",
-  message: "memory_add: Claude API configured 2026-02-25"
+  message: "memory_add: Claude API configured 2026-02-26"
 })
 ```
 
 ### Cron (Automatizado)
 ```cron
 # Crontab - cada 6 horas
-0 */6 * * * /root/workspace/scratch/2026-02-25/memory-auto-sync/sync-memory.sh
+0 */6 * * * /root/workspace/scratch/2026-02-25/memory-auto-sync/sync-memory.sh -v >> /var/log/memory-sync.log 2>&1
 ```
 
 ---
@@ -77,21 +86,25 @@ sessions_send({
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  /memory/*.md   │────▶│  sync-memory.sh │────▶│  Qdrant       │
-│                 │     │                 │     │  memory_facts  │
-│  Episodic       │     │  Batch Sync     │     │  Semantic      │
-│  (Markdown)     │     │  (llava:7b)     │     │  (4096 dims)   │
+│  /memory/*.md   │────▶│   sync-memory   │────▶│    Qdrant       │
+│  (episódica)    │     │   script        │     │  (semántica)     │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
-         │                         │                      ▲
-         │                         │                      │
-         └─────────────┬───────────┘                      │
-                       │                                 │
-         ┌─────────────▼──────────────┐                  │
-         │  memory-hook.js           │                  │
-         │  MCP Server               │──────────────────┘
-         │  • memory_add             │   Real-time
-         │  • memory_sync            │   (Single insert)
-         └───────────────────────────┘
+                              │                             ▲
+                              │  nomic-embed-text (768 dims)│
+                              │                             │
+                              └──────────────────────────────┘
+                                             │
+                          ┌─────────────────────────────────┐
+                          │  memory-hook.js            │
+                          │  MCP Server                 │
+                          │  • memory_add               │
+                          │  • memory_sync              │
+                          │  • memory_search            │
+                          │  • memory_delete            │
+                          │  • memory_stats             │
+                          └─────────────────────────────────┘
+                                             ▲
+                                        OpenClaw (real-time)
 ```
 
 ---
@@ -102,7 +115,7 @@ sessions_send({
 memory-auto-sync/
 ├── sync-memory.sh          # Batch sync (400 líneas)
 ├── hook/
-│   ├── memory-hook.js      # MCP server (577 líneas)
+│   ├── memory-hook.js      # MCP server (580 líneas)
 │   ├── package.json        # Node deps
 │   └── config.example.json # Configuración
 ├── docs/
@@ -110,7 +123,6 @@ memory-auto-sync/
 ├── tests/
 │   └── validate.sh         # Integration tests (⏳)
 ├── extract_sections.py     # Helper script
-├── generate_uuid.py        # UUID v5 generator
 └── README.md               # Overview
 ```
 
@@ -121,16 +133,27 @@ memory-auto-sync/
 ### Servicios Disponibles
 - ✅ Qdrant: localhost:6333
 - ✅ Embedding Proxy: localhost:11436
-- ✅ Colecciones: memory_facts, memory_incidents
+- ✅ Colecciones: memory_facts, memory_incidents, test_memory_points
 
 ### Dependencias
 - ✅ curl
 - ✅ python3
-- ✅ llava:7b (4096 dims)
+- ✅ nomic-embed-text (768 dims)
 
 ### Modelos Claude
-- Primary: anthropic/claude-sonnet-4-6 ✅
-- Fallback: ollama/kimi-k2.5:cloud ✅
+- Primary: zai/glm-4.7 (Qwen3-Coder-Next) ✅
+- Fallback: ollama/qwen3-coder-next:cloud ✅
+
+---
+
+## 🐛 Bugs Corregidos
+
+| ID | Bug | Fix |
+|----|-----|-----|
+| BUG-001 | Endpoint DELETE eliminaba toda la colección | Corregido a `POST /collections/{collection}/points/delete` |
+| BUG-002 | Validación incorrecta en DELETE | Cambiado a `data.status === 'ok'` |
+| BUG-003 | Variable de entorno incorrecta | Corregido a `EMBEDDING_PROXY_URL` |
+| BUG-004 | PointId string inválido | Implementado `generateUUID()` con UUID v4 |
 
 ---
 
@@ -148,10 +171,11 @@ memory-auto-sync/
 - C+ Architecture: docs/CPLUS-ARCHITECTURE.md
 - Git Flow: Validado en FlowOrdrV2 PR
 - Qdrant API: http://localhost:6333/dashboard
+- Toolplaybook: /root/.openclaw/workspace/docs/TOOLPLAYBOOK.md
 
 ---
 
-**Implementación**: C+ Architecture (Parallel spawn)
-**Modelos**: Claude Sonnet 4.6 native
-**Timestamp**: 2026-02-25 05:07 UTC
-**Commit**: 635fab8
+**Implementación**: C+ Architecture (Parallel spawn)  
+**Modelos**: GLM-4.7 (Qwen3-Coder-Next)  
+**Timestamp**: 2026-02-26  
+**Commit**: da6bb45 - "docs: sintetizar y resumir README principal del proyecto"
