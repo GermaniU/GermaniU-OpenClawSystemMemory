@@ -34,6 +34,7 @@ Automatizar el flujo de memoria desde archivos `/memory/*.md` hacia Qdrant para 
 
 ### Agentes que colaboraron
 
+#### Trabajo Original (Inicial)
 | Rol | Agente | Tarea | Status |
 |-----|--------|-------|--------|
 | **lead-orchestrator** | Claude Sonnet 4.6 | Coordination, planning, validation | ✅ |
@@ -41,7 +42,24 @@ Automatizar el flujo de memoria desde archivos `/memory/*.md` hacia Qdrant para 
 | **backend-coder** | Claude Sonnet 4.6 | memory-hook.js MCP server (580 líneas) | ✅ |
 | **qa-tester** | Claude Sonnet 4.6 | validate.sh tests | ✅ 60% |
 
-**Modelo usado:** `anthropic/claude-sonnet-4-6`
+**Modelo usado (Inicial):** `anthropic/claude-sonnet-4-6`
+
+#### Trabajo de Mejora (Este Desarrollo)
+| Rol | Agente | Tarea | Status |
+|-----|--------|-------|--------|
+| **builder-orchestrator** | GLM-4.7 (Qwen3-Coder-Next) | Coordinación, delegación, planificación | ✅ |
+| **backend-coder** | GLM-4.7 (Qwen3-Coder-Next) | 5 herramientas MCP + bug fixes | ✅ |
+| **qa-tester** | GLM-4.7 (Qwen3-Coder-Next) | 6 tests de QA (todos pasan) | ✅ |
+| **code-reviewer** | GLM-4.7 (Qwen3-Coder-Next) | 0 bloqueadores, 4 sugerencias opcionales | ✅ |
+
+**Modelo usado (Mejora):** `zai/glm-4.7` y `ollama/qwen3-coder-next:cloud`
+
+**Mejoras implementadas:**
+- 5 herramientas MCP: add, sync, search, delete, stats
+- Filtros por metadata en búsqueda semántica
+- Corrección de 4 bugs críticos (endpoint DELETE, UUID v4, variables de entorno)
+- Validación QA completa (6 tests pasando)
+- README completo con ejemplos de uso
 
 ## 🚀 Ventajas para OpenClaw
 
@@ -63,6 +81,18 @@ memory_search("C+ Architecture sessions_spawn")
 mcporter call memory memory_add \
   text="Claude API configurado" \
   collection="memory_facts"
+
+mcporter call memory memory_search \
+  text="C+ Architecture sessions_spawn" \
+  collection="memory_facts" \
+  limit=3
+
+mcporter call memory memory_stats \
+  collection="memory_facts"
+
+mcporter call memory memory_delete \
+  collection="memory_facts" \
+  point_id="uuid-del-punto"
 ```
 
 ### 4. Deduplicación Automática
@@ -71,8 +101,9 @@ mcporter call memory memory_add \
 - Incremental: solo cambios nuevos
 
 ### 5. Embeddings Locales
-- llava:7b (4096 dims) via localhost:11436
-- **Sin costo de API** (Ollama local)
+- **nomic-embed-text** (768 dims) via localhost:11436
+- Otros modelos disponibles: mxbai-embed-large (1024 dims)
+- **Sin costo de API** (Ollama Cloud Proxy)
 - Sin latencia de red
 
 ### 6. C+ Architecture Compliance
@@ -89,10 +120,10 @@ mcporter call memory memory_add \
 | **Docs** | `docs/ARCHITECTURE.md` | ~250 | Especificación técnica |
 
 ## Características
-- ✅ **UUID v5** con content hash (deduplicación)
-- ✅ **Embeddings** llava:7b (4096 dimensions)
+- ✅ **UUID v4** con content hash (deduplicación)
+- ✅ **Embeddings** nomic-embed-text (768 dims) o mxbai-embed-large (1024 dims)
 - ✅ **Qdrant** upsert con metadatos enriquecidos
-- ✅ **MCP Tools** memory_add, memory_sync
+- ✅ **5 MCP Tools** memory_add, memory_sync, memory_search, memory_delete, memory_stats
 - ✅ **C+ Architecture** parallel role spawn validation
 
 ## Integración C+ Architecture
@@ -133,7 +164,12 @@ bash validate.sh
 ## Archivos
 - `README.md` - Este documento
 - `sync-memory.sh` - Script principal de sincronización
-- `hook/` - MCP server con memory_add y memory_sync
+- `hook/` - MCP server con 5 herramientas
+  - `memory-hook.js` - MCP server principal (5 herramientas)
+  - `README.md` - Documentación completa del servidor
+  - `USAGE.js` - Ejemplos de uso
+  - `package.json` - Configuración de dependencias
+  - `config.example.json` - Ejemplo de configuración
 - `tests/` - Suite de validación
 - `docs/` - Especificación técnica
 - `IMPLEMENTATION.md` - Guía completa de implementación
@@ -145,4 +181,21 @@ bash validate.sh
 984df53 Initial implementation (MVP)
 ```
 
-## Estado: ✅ MVP PRODUCTION READY
+## Estado: ✅ PRODUCTION READY (5 Herramientas MCP)
+
+**Último commit:** `7a1e349` - docs: actualizar README con modelo embeddings, dimensión y roles participantes
+
+**Herramientas MCP disponibles:**
+- ✅ `memory_add` - Agregar memorias con UUID v4
+- ✅ `memory_sync` - Sincronizar archivos markdown
+- ✅ `memory_search` - Búsqueda semántica con filtros por metadata
+- ✅ `memory_delete` - Eliminar por ID o query semántica
+- ✅ `memory_stats` - Estadísticas de colección
+
+**Validación QA:** 6/6 tests pasan
+- QA-001: memory_add (UUID v4 válido)
+- QA-002: memory_search (score > 0.7)
+- QA-003: memory_search (filtros por metadata)
+- QA-004: memory_stats (status green)
+- QA-005: memory_delete (ID)
+- QA-006: memory_delete (query semántica)
