@@ -36,7 +36,7 @@ const CONFIG_PATHS = [
 const DEFAULT_QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const DEFAULT_COLLECTION = process.env.QDRANT_COLLECTION || 'memory_incidents';
 const DEFAULT_EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'nomic-embed-text';
-const EMBEDDING_PROXY_URL = process.env.OLLAMA_PROXY_URL || 'http://localhost:18789';
+const EMBEDDING_PROXY_URL = process.env.EMBEDDING_PROXY_URL || process.env.OLLAMA_PROXY_URL || 'http://localhost:11436';
 
 let config = {
   qdrantUrl: DEFAULT_QDRANT_URL,
@@ -238,7 +238,15 @@ async function memoryAdd(params) {
   }
   
   // Crear punto a insertar
-  const pointId = `${targetCollection}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  const pointId = generateUUID();
   const enrichedMetadata = {
     ...metadata,
     source: source || 'memory_hook',
@@ -248,26 +256,37 @@ async function memoryAdd(params) {
   
   // Insertar en Qdrant
   try {
+    const requestBody = {
+      points: [
+        {
+          id: pointId,
+          vector: embeddingResult.embedding,
+          payload: enrichedMetadata,
+        },
+      ],
+    };
+
+    log('debug', 'Sending to Qdrant', {
+      url: `${config.qdrantUrl}/collections/${targetCollection}/points`,
+      pointId,
+      vectorSize: embeddingResult.embedding.length,
+      payloadKeys: Object.keys(enrichedMetadata),
+    });
+
     const response = await fetch(`${config.qdrantUrl}/collections/${targetCollection}/points`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        points: [
-          {
-            id: pointId,
-            vector: embeddingResult.embedding,
-            payload: enrichedMetadata,
-          },
-        ],
-      }),
+      body: JSON.stringify(requestBody),
     });
-    
+
     if (!response.ok) {
-      throw new Error(`Qdrant insert failed: ${response.status}`);
+      const errorText = await response.text();
+      log('error', 'Qdrant insert failed', { status: response.status, errorText });
+      throw new Error(`Qdrant insert failed: ${response.status} - ${errorText}`);
     }
-    
+
     log('info', `Memory added to ${targetCollection}`, { pointId, text_length: text.length });
-    
+
     return {
       success: true,
       pointId,
@@ -359,6 +378,297 @@ async function memorySync(params) {
     };
   } catch (error) {
     log('error', 'Error syncing memory', error.message);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+async function memorySearch(params) {
+  const { collection, text, limit = 3, score_threshold = 0.5, filter = null } = params;
+
+  if (!text) {
+    return {
+      success: false,
+      error: 'Missing required parameter: text',
+    };
+  }
+
+  // Validar conexión a Qdrant (graceful)
+  const connStatus = await checkQdrantConnection();
+  if (!connStatus.connected) {
+    log('warn', 'Qdrant unavailable, cannot search');
+    return {
+      success: false,
+      error: 'Qdrant unavailable',
+      details: connStatus.error,
+    };
+  }
+
+  const targetCollection = collection || config.defaultCollection;
+
+  // Generar embedding de la query
+  const embeddingResult = await generateEmbedding(text);
+  if (!embeddingResult.success) {
+    return {
+      success: false,
+      error: `Embedding generation failed: ${embeddingResult.error}`,
+    };
+  }
+
+  try {
+    const requestBody = {
+      vector: embeddingResult.embedding,
+      limit: limit,
+      score_threshold: score_threshold,
+      with_payload: true,
+    };
+
+    // Agregar filtro si está presente
+    if (filter) {
+      requestBody.filter = filter;
+    }
+
+    const response = await fetch(`${config.qdrantUrl}/collections/${targetCollection}/points/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      log('error', 'Qdrant search failed', { status: response.status, errorText });
+      throw new Error(`Qdrant search failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    const results = data.result.map((point) => ({
+      id: point.id,
+      score: point.score,
+      text: point.payload?.text || point.payload?.text_preview || '',
+      metadata: point.payload || {},
+    }));
+
+    log('info', `Memory search completed`, { collection: targetCollection, count: results.length, filter });
+
+    return {
+      success: true,
+      collection: targetCollection,
+      query: text,
+      count: results.length,
+      results,
+    };
+  } catch (error) {
+    log('error', 'Error searching memory', error.message);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+async function memoryDelete(params) {
+  const { collection, point_id, query, limit = 1, score_threshold = 0.7 } = params;
+
+  // Validar conexión a Qdrant (graceful)
+  const connStatus = await checkQdrantConnection();
+  if (!connStatus.connected) {
+    log('warn', 'Qdrant unavailable, cannot delete');
+    return {
+      success: false,
+      error: 'Qdrant unavailable',
+      details: connStatus.error,
+    };
+  }
+
+  const targetCollection = collection || config.defaultCollection;
+
+  try {
+    // Caso 1: Eliminar por ID directo
+    if (point_id) {
+      const requestBody = {
+        points: [point_id],
+      };
+
+      log('debug', 'Deleting point by ID', {
+        url: `${config.qdrantUrl}/collections/${targetCollection}/points/delete`,
+        point_id,
+      });
+
+      const response = await fetch(`${config.qdrantUrl}/collections/${targetCollection}/points/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        log('error', 'Qdrant delete failed', { status: response.status, errorText });
+        throw new Error(`Qdrant delete failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      if (data.status === 'ok') {
+        log('info', 'Memory deleted by ID', { point_id });
+        return {
+          success: true,
+          pointId: point_id,
+          collection: targetCollection,
+          message: `Memory deleted from collection '${targetCollection}'`,
+        };
+      }
+
+      throw new Error('Delete operation failed: status !== ok');
+    }
+
+    // Caso 2: Eliminar por query semántica (busca primero, luego elimina)
+    if (query) {
+      // Buscar puntos que coincidan
+      const embeddingResult = await generateEmbedding(query);
+      if (!embeddingResult.success) {
+        return {
+          success: false,
+          error: `Embedding generation failed: ${embeddingResult.error}`,
+        };
+      }
+
+      const searchResponse = await fetch(`${config.qdrantUrl}/collections/${targetCollection}/points/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vector: embeddingResult.embedding,
+          limit: limit,
+          score_threshold: score_threshold,
+          with_payload: true,
+        }),
+      });
+
+      if (!searchResponse.ok) {
+        throw new Error(`Qdrant search failed: ${searchResponse.status}`);
+      }
+
+      const searchData = await searchResponse.json();
+
+      if (searchData.result.length === 0) {
+        return {
+          success: true,
+          collection: targetCollection,
+          query,
+          deleted: 0,
+          message: 'No points matched the query',
+        };
+      }
+
+      // Extraer IDs de puntos a eliminar
+      const pointsToDelete = searchData.result.map((p) => p.id);
+
+      // Eliminar los puntos encontrados
+      const deleteResponse = await fetch(`${config.qdrantUrl}/collections/${targetCollection}/points/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          points: pointsToDelete,
+        }),
+      });
+
+      if (!deleteResponse.ok) {
+        const errorText = await deleteResponse.text();
+        throw new Error(`Qdrant delete failed: ${deleteResponse.status} - ${errorText}`);
+      }
+
+      const deleteData = await deleteResponse.json();
+      if (deleteData.status !== 'ok') {
+        throw new Error('Delete operation failed: status !== ok');
+      }
+
+      log('info', 'Memory deleted by query', {
+        collection: targetCollection,
+        query,
+        deleted: pointsToDelete.length,
+        pointIds: pointsToDelete,
+      });
+
+      return {
+        success: true,
+        collection: targetCollection,
+        query,
+        deleted: pointsToDelete.length,
+        pointIds: pointsToDelete,
+        message: `Deleted ${pointsToDelete.length} memories from collection '${targetCollection}'`,
+      };
+    }
+
+    // Ningún parámetro válido
+    return {
+      success: false,
+      error: 'Missing required parameter: point_id or query',
+    };
+  } catch (error) {
+    log('error', 'Error deleting memory', error.message);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+async function memoryStats(params) {
+  const { collection } = params;
+
+  // Validar conexión a Qdrant (graceful)
+  const connStatus = await checkQdrantConnection();
+  if (!connStatus.connected) {
+    log('warn', 'Qdrant unavailable, cannot get stats');
+    return {
+      success: false,
+      error: 'Qdrant unavailable',
+      details: connStatus.error,
+    };
+  }
+
+  const targetCollection = collection || config.defaultCollection;
+
+  try {
+    // Obtener información de la colección
+    const response = await fetch(`${config.qdrantUrl}/collections/${targetCollection}`);
+
+    if (response.status === 404) {
+      return {
+        success: true,
+        collection: targetCollection,
+        exists: false,
+        message: `Collection '${targetCollection}' does not exist`,
+      };
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Qdrant stats failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    const result = {
+      success: true,
+      collection: targetCollection,
+      exists: true,
+      points_count: data.result.points_count,
+      segments_count: data.result.segments_count,
+      status: data.result.status,
+      optimizer_status: data.result.optimizer_status,
+      config: {
+        vector_size: data.result.config.params.vectors.size,
+        distance: data.result.config.params.vectors.distance,
+      },
+    };
+
+    log('info', `Memory stats retrieved`, { collection: targetCollection, points_count: result.points_count });
+
+    return result;
+  } catch (error) {
+    log('error', 'Error getting memory stats', error.message);
     return {
       success: false,
       error: error.message,
@@ -493,6 +803,78 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['file_path'],
         },
       },
+      {
+        name: 'memory_search',
+        description: 'Buscar memorias en Qdrant usando búsqueda semántica',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            collection: {
+              type: 'string',
+              description: 'Nombre de la colección en Qdrant (default: memory_incidents)',
+            },
+            text: {
+              type: 'string',
+              description: 'Texto de búsqueda',
+            },
+            limit: {
+              type: 'number',
+              description: 'Número máximo de resultados (default: 3)',
+            },
+            score_threshold: {
+              type: 'number',
+              description: 'Umbral mínimo de similitud (default: 0.5)',
+            },
+            filter: {
+              type: 'object',
+              description: 'Filtro Qdrant en formato {must: [{key: "field", match: {value: "xyz"}}]}',
+            },
+          },
+          required: ['text'],
+        },
+      },
+      {
+        name: 'memory_delete',
+        description: 'Eliminar memorias por ID o búsqueda semántica',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            collection: {
+              type: 'string',
+              description: 'Nombre de la colección en Qdrant (default: memory_incidents)',
+            },
+            point_id: {
+              type: 'string',
+              description: 'ID del punto a eliminar (UUID)',
+            },
+            query: {
+              type: 'string',
+              description: 'Texto de búsqueda para eliminar múltiples puntos coincidentes',
+            },
+            limit: {
+              type: 'number',
+              description: 'Máximo de puntos a eliminar por query (default: 1)',
+            },
+            score_threshold: {
+              type: 'number',
+              description: 'Umbral mínimo de similitud para query (default: 0.7)',
+            },
+          },
+        },
+      },
+      {
+        name: 'memory_stats',
+        description: 'Obtener estadísticas de una colección de memoria',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            collection: {
+              type: 'string',
+              description: 'Nombre de la colección en Qdrant (default: memory_incidents)',
+            },
+          },
+        },
+      },
     ],
   };
 });
@@ -512,6 +894,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         break;
       case 'memory_sync':
         result = await memorySync(args);
+        break;
+      case 'memory_search':
+        result = await memorySearch(args);
+        break;
+      case 'memory_delete':
+        result = await memoryDelete(args);
+        break;
+      case 'memory_stats':
+        result = await memoryStats(args);
         break;
       default:
         throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);

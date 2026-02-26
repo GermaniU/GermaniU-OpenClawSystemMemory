@@ -15,12 +15,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MEMORY_DIR="/root/workspace/memory"
 QDRANT_URL="http://localhost:6333"
-EMBEDDING_URL="http://localhost:11434/v1/embeddings"
-EMBEDDING_MODEL="llava:7b"
-EMBEDDING_PROXY_URL="http://localhost:11434"
+EMBEDDING_URL="http://localhost:11436/v1/embeddings"
+EMBEDDING_MODEL="nomic-embed-text:latest"
+EMBEDDING_PROXY_URL="http://localhost:11436"
 COLLECTION_NAME="memory_facts"
 LOG_FILE="$SCRIPT_DIR/sync.log"
-VECTOR_SIZE=4096
+VECTOR_SIZE=768
 
 # Archivos temporales
 TMP_DIR="$SCRIPT_DIR/.tmp"
@@ -79,7 +79,7 @@ generate_embedding() {
     
     [[ "$escaped_text" == '""' ]] && { echo ""; return; }
     
-    local payload="{\"model\": \"llava:7b\", \"input\": $escaped_text}"
+    local payload="{\"model\": \"$EMBEDDING_MODEL\", \"input\": $escaped_text}"
     
     local response
     response=$(curl -s -X POST "$EMBEDDING_URL" \
@@ -148,7 +148,7 @@ import json
 with open('$filepath', 'r', encoding='utf-8') as f:
     content = f.read()
 
-header_pattern = r'^(#{2,3})\\s+(.+)\$'
+header_pattern = r'^(#{1,3})\\s+(.+)\$'
 lines = content.split('\n')
 sections = []
 current_section = None
@@ -243,7 +243,7 @@ for section in sections:
         req = urllib.request.Request(
             f"{embedding_proxy_url}/v1/embeddings",
             data=embedding_payload,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", "User-Agent": "curl/8.0.0"},
             method="POST"
         )
         
