@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/assets/og-image.png" alt="OpenClaw System Memory — memoria local para agentes IA vía MCP" width="720">
+  <img src="docs/assets/og-image.png" alt="MCP Memory — memoria local para agentes IA vía MCP" width="720">
 </p>
 
-# OpenClaw System Memory — Memoria local para agentes IA vía MCP
+# MCP Memory — Memoria local para agentes IA vía MCP
 
 > **Lleva la memoria de tu agente IA a cualquier máquina.**
 > Servidor MCP open source que da memoria persistente con búsqueda semántica a Claude Code, OpenCode, Cursor, Continue y cualquier cliente compatible con [Model Context Protocol](https://modelcontextprotocol.io). Embeddings con Ollama, vector search con Qdrant, **100% en tu hardware**.
@@ -20,7 +20,7 @@
 
 ## 💡 Por qué existe
 
-Los agentes IA olvidan todo entre conversaciones. Las soluciones existentes son cloud-only, multi-tenant pesado, o están atadas a un único cliente. **OpenClaw System Memory** resuelve esto con tres ideas simples:
+Los agentes IA olvidan todo entre conversaciones. Las soluciones existentes son cloud-only, multi-tenant pesado, o están atadas a un único cliente. **MCP Memory** resuelve esto con tres ideas simples:
 
 1. **Tu memoria, tu máquina.** Embeddings + vectores corren localmente. Cero datos en la nube.
 2. **Conectas una vez, funciona en todos lados.** Es un servidor MCP estándar — cualquier cliente que hable MCP lo usa sin custom code.
@@ -33,8 +33,8 @@ Los agentes IA olvidan todo entre conversaciones. Las soluciones existentes son 
 > **Pre-requisito:** un Ollama con un modelo de embeddings descargado. Lee la advertencia abajo antes de continuar.
 
 ```bash
-git clone https://github.com/GermaniU/GermaniU-OpenClawSystemMemory.git
-cd GermaniU-OpenClawSystemMemory
+git clone https://github.com/GermaniU/mcp-memory.git
+cd mcp-memory
 cp .env.example .env && docker compose up -d
 ```
 
@@ -93,7 +93,7 @@ Schemas + ejemplos de invocación en [`docs/CLIENTS.md`](docs/CLIENTS.md).
 
 ## 🎯 Alcance actual
 
-OpenClaw System Memory es deliberadamente pequeño. Hace **una cosa bien: memoria semántica de texto plano**. No es un sistema de RAG completo, no es un knowledge base, no es un grafo.
+MCP Memory es deliberadamente pequeño. Hace **una cosa bien: memoria semántica de texto plano**. No es un sistema de RAG completo, no es un knowledge base, no es un grafo.
 
 ### Lo que SÍ hace
 - ✅ Almacena y recupera **texto puro** con embeddings.
@@ -110,7 +110,7 @@ OpenClaw System Memory es deliberadamente pequeño. Hace **una cosa bien: memori
 - ❌ **No sincroniza entre máquinas.** Backup manual (`tar` del volumen) si quieres mover datos.
 - ❌ **No tiene auth.** Solo escucha en `localhost`. Si lo expones a internet, pon un proxy con auth.
 
-Si necesitas algo de la lista NO, abre un [issue](https://github.com/GermaniU/GermaniU-OpenClawSystemMemory/issues) con caso de uso real (no especulativo) — vamos por demanda, no por especulación.
+Si necesitas algo de la lista NO, abre un [issue](https://github.com/GermaniU/mcp-memory/issues) con caso de uso real (no especulativo) — vamos por demanda, no por especulación.
 
 ---
 
@@ -176,7 +176,7 @@ curl -sS -X POST http://localhost:8765/mcp \
    └──────────────────┘
 ```
 
-Cada tool MCP vive en su propia carpeta (`server/src/openclaw_memory/tools/<tool>/handler.py`). Añadir una tool nueva = añadir una carpeta + un decorator en `server.py`. Cero acoplamiento.
+Cada tool MCP vive en su propia carpeta (`server/src/mcp_memory/tools/<tool>/handler.py`). Añadir una tool nueva = añadir una carpeta + un decorator en `server.py`. Cero acoplamiento.
 
 Detalle técnico en [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
@@ -184,7 +184,7 @@ Detalle técnico en [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## 🤝 Contribuye
 
-OpenClaw System Memory es **un regalo a la comunidad** — MIT, sin trampas. PRs, issues y forks bienvenidos.
+MCP Memory es **un regalo a la comunidad** — MIT, sin trampas. PRs, issues y forks bienvenidos.
 
 **Reglas (resumen):**
 1. **Clean Code · SOLID · KISS · YAGNI · Vertical slice · Tests primero.** No se aceptan PRs sin tests para la lógica nueva.
@@ -227,7 +227,7 @@ ruff check src tests
 **Cambiar de modelo de embedding después de tener datos**
 - Los vectores viejos no son compatibles con otra dimensión:
   ```bash
-  curl -X DELETE http://localhost:6333/collections/openclaw_memory
+  curl -X DELETE http://localhost:6333/collections/mcp_memory
   docker compose up -d --force-recreate mcp-memory
   ```
 

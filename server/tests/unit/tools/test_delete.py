@@ -1,5 +1,5 @@
-from openclaw_memory.tools.delete.handler import DeleteInput, delete
-from openclaw_memory.tools.save.handler import SaveInput, save
+from mcp_memory.tools.delete.handler import DeleteInput, delete
+from mcp_memory.tools.save.handler import SaveInput, save
 
 
 async def test_delete_existing_returns_true(embeddings, store):

@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     ollama_api_key: str | None = None
 
     qdrant_url: str = "http://qdrant:6333"
-    qdrant_collection: str = "openclaw_memory"
+    qdrant_collection: str = "mcp_memory"
 
     mcp_host: str = "0.0.0.0"
     mcp_port: int = 8765

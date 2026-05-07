@@ -45,20 +45,20 @@
 
   <!-- main title -->
   <text x="80" y="220" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif"
-        font-size="92" font-weight="800" fill="#FFFFFF" letter-spacing="-2">
-    OpenClaw
+        font-size="118" font-weight="800" fill="#FFFFFF" letter-spacing="-3">
+    MCP
   </text>
-  <text x="80" y="320" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif"
-        font-size="92" font-weight="800" fill="url(#accent)" letter-spacing="-2">
-    System Memory
+  <text x="80" y="340" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="118" font-weight="800" fill="url(#accent)" letter-spacing="-3">
+    Memory
   </text>
 
   <!-- tagline -->
-  <text x="80" y="380" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+  <text x="80" y="400" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif"
         font-size="28" font-weight="500" fill="#CBD5E1">
     Lleva la memoria de tu agente IA a cualquier máquina.
   </text>
-  <text x="80" y="416" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+  <text x="80" y="436" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif"
         font-size="22" font-weight="400" fill="#94A3B8">
     Servidor MCP local con búsqueda semántica · Ollama + Qdrant · Python.
   </text>
@@ -92,7 +92,7 @@
   <line x1="80" y1="560" x2="1120" y2="560" stroke="#334155" stroke-width="1"/>
   <text x="80" y="595" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
         font-size="20" font-weight="500" fill="#94A3B8">
-    github.com/GermaniU/GermaniU-OpenClawSystemMemory
+    github.com/GermaniU/mcp-memory
   </text>
   <text x="1120" y="595" text-anchor="end" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif"
         font-size="20" font-weight="600" fill="#34D399">

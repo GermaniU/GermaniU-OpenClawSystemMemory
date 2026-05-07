@@ -1,5 +1,5 @@
-from openclaw_memory.tools.save.handler import SaveInput, save
-from openclaw_memory.tools.search.handler import SearchInput, search
+from mcp_memory.tools.save.handler import SaveInput, save
+from mcp_memory.tools.search.handler import SearchInput, search
 
 
 async def test_search_returns_most_similar_first(embeddings, store):

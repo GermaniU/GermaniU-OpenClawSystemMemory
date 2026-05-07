@@ -1,6 +1,6 @@
 {
   "mcp": {
-    "openclaw-memory": {
+    "mcp-memory": {
       "type": "remote",
       "url": "http://localhost:8765/mcp",
       "enabled": true

@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from openclaw_memory.shared.types import EmbeddingsClient, Memory, MemoryStore
+from mcp_memory.shared.types import EmbeddingsClient, Memory, MemoryStore
 
 
 class FakeEmbeddings(EmbeddingsClient):

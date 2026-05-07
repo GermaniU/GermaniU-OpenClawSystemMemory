@@ -27,7 +27,7 @@ Primera versión publicable. La implementación previa en Node.js se conserva en
 
 ### Added
 - Servidor MCP en **Python 3.11** con [FastMCP](https://gofastmcp.com) (Streamable HTTP, `:8765/mcp`).
-- **Vertical-slice architecture**: una carpeta por tool en `server/src/openclaw_memory/tools/` con handler aislado.
+- **Vertical-slice architecture**: una carpeta por tool en `server/src/mcp_memory/tools/` con handler aislado.
 - **7 tools MCP**:
   - `memory_save` — guardar texto + tags + metadata, embebe automático.
   - `memory_search` — búsqueda semántica con filtro por namespace y `min_score`.
@@ -80,5 +80,5 @@ Primera implementación. Se conserva en [`legacy/`](legacy/) por trazabilidad. Y
 
 ---
 
-[Unreleased]: https://github.com/GermaniU/GermaniU-OpenClawSystemMemory/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/GermaniU/GermaniU-OpenClawSystemMemory/releases/tag/v0.1.0
+[Unreleased]: https://github.com/GermaniU/mcp-memory/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/GermaniU/mcp-memory/releases/tag/v0.1.0

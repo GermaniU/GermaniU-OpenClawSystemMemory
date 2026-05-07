@@ -1,5 +1,5 @@
-from openclaw_memory.tools.save.handler import SaveInput, save
-from openclaw_memory.tools.stats.handler import StatsInput, stats
+from mcp_memory.tools.save.handler import SaveInput, save
+from mcp_memory.tools.stats.handler import StatsInput, stats
 
 
 async def test_stats_empty_store_returns_zero(store):

@@ -5,7 +5,7 @@
 ### Vertical slice
 
 ```
-server/src/openclaw_memory/
+server/src/mcp_memory/
 ├── server.py                 # composition root: wiring FastMCP + dependencias
 ├── shared/                   # solo lo verdaderamente compartido
 │   ├── config.py             # pydantic-settings, .env

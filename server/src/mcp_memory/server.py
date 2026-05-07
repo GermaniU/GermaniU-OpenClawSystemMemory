@@ -5,17 +5,17 @@ from typing import Any
 import anyio
 from fastmcp import FastMCP
 
-from openclaw_memory.shared.config import Settings, get_settings
-from openclaw_memory.shared.embeddings import OllamaEmbeddings
-from openclaw_memory.shared.store import QdrantStore
-from openclaw_memory.shared.types import EmbeddingsClient, Memory, MemoryStore
-from openclaw_memory.tools.delete.handler import DeleteInput, DeleteResult, delete
-from openclaw_memory.tools.list_.handler import ListInput, list_memories
-from openclaw_memory.tools.recent.handler import RecentInput, recent
-from openclaw_memory.tools.save.handler import SaveInput, save
-from openclaw_memory.tools.search.handler import SearchInput, search
-from openclaw_memory.tools.stats.handler import StatsInput, stats
-from openclaw_memory.tools.update.handler import UpdateInput, update
+from mcp_memory.shared.config import Settings, get_settings
+from mcp_memory.shared.embeddings import OllamaEmbeddings
+from mcp_memory.shared.store import QdrantStore
+from mcp_memory.shared.types import EmbeddingsClient, Memory, MemoryStore
+from mcp_memory.tools.delete.handler import DeleteInput, DeleteResult, delete
+from mcp_memory.tools.list_.handler import ListInput, list_memories
+from mcp_memory.tools.recent.handler import RecentInput, recent
+from mcp_memory.tools.save.handler import SaveInput, save
+from mcp_memory.tools.search.handler import SearchInput, search
+from mcp_memory.tools.stats.handler import StatsInput, stats
+from mcp_memory.tools.update.handler import UpdateInput, update
 
 
 def build_app(
@@ -25,7 +25,7 @@ def build_app(
     store: MemoryStore,
 ) -> FastMCP:
     """Compose the FastMCP app. Pure wiring — no business logic here."""
-    mcp = FastMCP("openclaw-memory")
+    mcp = FastMCP("mcp-memory")
 
     @mcp.tool(name="memory_save", description="Persist a new memory. Returns the saved entry.")
     async def _save(inp: SaveInput) -> Memory:

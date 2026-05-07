@@ -6,7 +6,7 @@ from typing import Any
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models as qm
 
-from openclaw_memory.shared.types import Memory
+from mcp_memory.shared.types import Memory
 
 
 class QdrantStore:

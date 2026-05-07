@@ -40,8 +40,8 @@ Si esto no funciona, no sigas — el resto fallará con `401`/`404`.
 ### Pasos
 
 ```bash
-git clone https://github.com/GermaniU/GermaniU-OpenClawSystemMemory.git
-cd GermaniU-OpenClawSystemMemory
+git clone https://github.com/GermaniU/mcp-memory.git
+cd mcp-memory
 cp .env.example .env
 # Edita .env (ver tabla abajo)
 docker compose up -d
@@ -57,7 +57,7 @@ docker compose logs -f mcp-memory
 | `EMBEDDING_MODEL`    | `bge-m3`              | Modelo Ollama. Debe estar `ollama pull`-ed en tu Ollama. |
 | `EMBEDDING_DIM`      | `1024`                | **Debe coincidir EXACTO** con el modelo: bge-m3=1024, mxbai-embed-large=1024, nomic-embed-text=768. |
 | `MCP_PORT`           | `8765`                | Puerto del MCP en el host. |
-| `QDRANT_COLLECTION`  | `openclaw_memory`     | Nombre interno de la colección Qdrant. |
+| `QDRANT_COLLECTION`  | `mcp_memory`     | Nombre interno de la colección Qdrant. |
 | `DEFAULT_NAMESPACE`  | `default`             | Namespace cuando el cliente no especifica uno. |
 
 Tras editar `.env`: `docker compose up -d` (recrea solo lo necesario).
@@ -75,8 +75,8 @@ Tras editar `.env`: `docker compose up -d` (recrea solo lo necesario).
 ### Pasos
 
 ```bash
-git clone https://github.com/GermaniU/GermaniU-OpenClawSystemMemory.git
-cd GermaniU-OpenClawSystemMemory/server
+git clone https://github.com/GermaniU/mcp-memory.git
+cd mcp-memory/server
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
 
@@ -86,7 +86,7 @@ export QDRANT_URL=http://localhost:6333
 export EMBEDDING_MODEL=bge-m3
 export EMBEDDING_DIM=1024
 
-python -m openclaw_memory
+python -m mcp_memory
 ```
 
 > Tip: pon esas variables en un `.env` y carga con `direnv` o `dotenv` en lugar de `export` manual.
@@ -98,7 +98,7 @@ python -m openclaw_memory
 ```bash
 # 1. Ajusta EMBEDDING_MODEL y EMBEDDING_DIM
 # 2. Borra la colección (los vectores viejos no son compatibles con otra dim)
-curl -X DELETE http://localhost:6333/collections/openclaw_memory
+curl -X DELETE http://localhost:6333/collections/mcp_memory
 # 3. Recrea
 docker compose up -d --force-recreate mcp-memory
 ```
@@ -111,7 +111,7 @@ Toda la memoria vive en el volumen `qdrant-data`:
 
 ```bash
 docker run --rm \
-  -v openclawsystemmemory_qdrant-data:/data \
+  -v mcp-memory_qdrant-data:/data \
   -v "$PWD":/backup \
   alpine tar czf /backup/qdrant-$(date +%Y%m%d).tar.gz -C /data .
 ```

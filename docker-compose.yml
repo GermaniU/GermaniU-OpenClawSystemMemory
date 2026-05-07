@@ -1,7 +1,7 @@
 services:
   qdrant:
     image: qdrant/qdrant:latest
-    container_name: openclaw-qdrant
+    container_name: mcp-memory-qdrant
     restart: unless-stopped
     volumes:
       - qdrant-data:/qdrant/storage
@@ -16,8 +16,8 @@ services:
   mcp-memory:
     build:
       context: ./server
-    image: openclaw-memory:0.1.0
-    container_name: openclaw-mcp-memory
+    image: mcp-memory:0.1.0
+    container_name: mcp-memory
     restart: unless-stopped
     depends_on:
       qdrant:
@@ -28,7 +28,7 @@ services:
       OLLAMA_URL: ${OLLAMA_URL:-https://ollama.com}
       OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
       QDRANT_URL: http://qdrant:6333
-      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-openclaw_memory}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-mcp_memory}
       MCP_HOST: 0.0.0.0
       MCP_PORT: 8765
       DEFAULT_NAMESPACE: ${DEFAULT_NAMESPACE:-default}

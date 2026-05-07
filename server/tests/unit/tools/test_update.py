@@ -1,7 +1,7 @@
 import asyncio
 
-from openclaw_memory.tools.save.handler import SaveInput, save
-from openclaw_memory.tools.update.handler import UpdateInput, update
+from mcp_memory.tools.save.handler import SaveInput, save
+from mcp_memory.tools.update.handler import UpdateInput, update
 
 
 async def test_update_changes_content_and_bumps_updated_at(embeddings, store):

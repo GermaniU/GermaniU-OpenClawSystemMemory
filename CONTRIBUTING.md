@@ -1,4 +1,4 @@
-# Contribuir a OpenClaw System Memory
+# Contribuir a MCP Memory
 
 ¡Gracias por interesarte! Este documento define **cómo se construye** y **cómo se contribuye** al proyecto. Léelo antes de mandar un PR — los detalles aquí son la diferencia entre un PR que se mergea rápido y uno que pide cambios.
 
@@ -8,7 +8,7 @@
 
 > **Software pequeño, bien hecho, fácil de mantener.**
 
-OpenClaw System Memory es deliberadamente reducido. Hace **una cosa** (memoria semántica de texto plano vía MCP) y la hace bien. No vamos a añadir features especulativas. Cada línea de código que entra al repo tiene que justificar su mantenimiento.
+MCP Memory es deliberadamente reducido. Hace **una cosa** (memoria semántica de texto plano vía MCP) y la hace bien. No vamos a añadir features especulativas. Cada línea de código que entra al repo tiene que justificar su mantenimiento.
 
 ---
 
@@ -32,7 +32,7 @@ OpenClaw System Memory es deliberadamente reducido. Hace **una cosa** (memoria s
 
 ### Vertical slice architecture
 ```
-server/src/openclaw_memory/
+server/src/mcp_memory/
 ├── server.py                 # composition root: wiring FastMCP + dependencias
 ├── shared/                   # solo lo verdaderamente compartido entre slices
 │   ├── config.py · embeddings.py · store.py · types.py
@@ -85,8 +85,8 @@ Mensaje en imperativo, primera línea ≤ 72 chars, cuerpo opcional explicando e
 ## 🛠 Setup de desarrollo
 
 ```bash
-git clone https://github.com/GermaniU/GermaniU-OpenClawSystemMemory.git
-cd GermaniU-OpenClawSystemMemory/server
+git clone https://github.com/GermaniU/mcp-memory.git
+cd mcp-memory/server
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
@@ -114,7 +114,7 @@ Pongamos que quieres añadir `memory_export`. Sigue este flujo y tu PR pasa ráp
 ### 1. Crea la slice
 
 ```
-server/src/openclaw_memory/tools/export/
+server/src/mcp_memory/tools/export/
 ├── __init__.py    # vacío
 └── handler.py     # ExportInput + async export(...)
 ```
@@ -124,7 +124,7 @@ server/src/openclaw_memory/tools/export/
 ```python
 from __future__ import annotations
 from pydantic import BaseModel, Field
-from openclaw_memory.shared.types import MemoryStore
+from mcp_memory.shared.types import MemoryStore
 
 
 class ExportInput(BaseModel):
@@ -154,7 +154,7 @@ Con `FakeStore` y `FakeEmbeddings` ya disponibles en `conftest.py`. Cubre:
 Añade el decorator junto a las otras tools — **no toques las existentes**:
 
 ```python
-from openclaw_memory.tools.export.handler import ExportInput, export
+from mcp_memory.tools.export.handler import ExportInput, export
 
 @mcp.tool(name="memory_export", description="Exportar memorias en JSONL o Markdown.")
 async def _export(inp: ExportInput) -> str:

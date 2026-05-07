@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
-from openclaw_memory.shared.types import EmbeddingsClient, Memory, MemoryStore
+from mcp_memory.shared.types import EmbeddingsClient, Memory, MemoryStore
 
 
 class SaveInput(BaseModel):

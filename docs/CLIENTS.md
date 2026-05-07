@@ -11,7 +11,7 @@ Edita `~/.claude/settings.json` (user-level) o `.claude/settings.json` del proye
 ```json
 {
   "mcpServers": {
-    "openclaw-memory": {
+    "mcp-memory": {
       "type": "http",
       "url": "http://localhost:8765/mcp"
     }
@@ -19,7 +19,7 @@ Edita `~/.claude/settings.json` (user-level) o `.claude/settings.json` del proye
 }
 ```
 
-Reinicia Claude Code. Las tools aparecen como `mcp__openclaw-memory__memory_save`, etc.
+Reinicia Claude Code. Las tools aparecen como `mcp__mcp-memory__memory_save`, etc.
 
 Ver también: [`examples/claude-code.json`](../examples/claude-code.json).
 
@@ -32,7 +32,7 @@ Ver también: [`examples/claude-code.json`](../examples/claude-code.json).
 ```json
 {
   "mcpServers": {
-    "openclaw-memory": {
+    "mcp-memory": {
       "url": "http://localhost:8765/mcp"
     }
   }
@@ -73,7 +73,7 @@ Configura el servidor en tu `~/.config/opencode/config.json`:
 ```json
 {
   "mcp": {
-    "openclaw-memory": {
+    "mcp-memory": {
       "type": "remote",
       "url": "http://localhost:8765/mcp",
       "enabled": true

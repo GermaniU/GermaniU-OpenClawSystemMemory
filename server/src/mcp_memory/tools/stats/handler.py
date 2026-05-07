@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from openclaw_memory.shared.types import MemoryStore
+from mcp_memory.shared.types import MemoryStore
 
 
 class StatsInput(BaseModel):

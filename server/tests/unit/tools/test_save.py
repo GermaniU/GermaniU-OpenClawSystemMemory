@@ -1,6 +1,6 @@
 import pytest
 
-from openclaw_memory.tools.save.handler import SaveInput, save
+from mcp_memory.tools.save.handler import SaveInput, save
 
 
 async def test_save_returns_memory_with_generated_id_and_timestamps(embeddings, store):

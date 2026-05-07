@@ -1,5 +1,5 @@
-from openclaw_memory.tools.list_.handler import ListInput, list_memories
-from openclaw_memory.tools.save.handler import SaveInput, save
+from mcp_memory.tools.list_.handler import ListInput, list_memories
+from mcp_memory.tools.save.handler import SaveInput, save
 
 
 async def test_list_returns_all_in_namespace(embeddings, store):

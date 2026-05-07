@@ -1,7 +1,7 @@
 import asyncio
 
-from openclaw_memory.tools.recent.handler import RecentInput, recent
-from openclaw_memory.tools.save.handler import SaveInput, save
+from mcp_memory.tools.recent.handler import RecentInput, recent
+from mcp_memory.tools.save.handler import SaveInput, save
 
 
 async def test_recent_orders_by_updated_at_desc(embeddings, store):

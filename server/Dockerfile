@@ -13,4 +13,4 @@ RUN pip install --no-cache-dir .
 
 EXPOSE 8765
 
-CMD ["python", "-m", "openclaw_memory"]
+CMD ["python", "-m", "mcp_memory"]
