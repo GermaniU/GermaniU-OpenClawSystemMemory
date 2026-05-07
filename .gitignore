@@ -1,32 +1,70 @@
-# Security - Cron jobs and system files (keep only RAG core)
-*.sh
-!/sync-memory.sh
-!tests/validate.sh
-*.py
-
-# Build artifacts
-*.log
-.tmp/
+# Python
 __pycache__/
-*.pyc
-node_modules/
-package-lock.json
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# OS files
-.DS_Store
-Thumbs.db
+# Virtual envs
+.venv/
+venv/
+env/
+ENV/
 
-# IDE
+# Testing & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Type checkers
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# Temporary files
-EOF
-ENDOFPYTHON
-P1
-PYEOF
-PY2EOF
-SECPYTHON
 *~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local env / secrets
+.env
+.env.local
+.env.*.local
+
+# Runtime data (Docker volumes mounted locally)
+data/
+qdrant-data/
+ollama-data/
+
+# Legacy node residuals
+legacy/**/node_modules/
+legacy/**/*.log

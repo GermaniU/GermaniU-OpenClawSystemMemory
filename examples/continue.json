@@ -1,0 +1,12 @@
+{
+  "experimental": {
+    "modelContextProtocolServers": [
+      {
+        "transport": {
+          "type": "streamable-http",
+          "url": "http://localhost:8765/mcp"
+        }
+      }
+    ]
+  }
+}

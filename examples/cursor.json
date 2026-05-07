@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "openclaw-memory": {
+      "url": "http://localhost:8765/mcp"
+    }
+  }
+}

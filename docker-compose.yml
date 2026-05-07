@@ -1,0 +1,41 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: openclaw-qdrant
+    restart: unless-stopped
+    volumes:
+      - qdrant-data:/qdrant/storage
+    ports:
+      - "6333:6333"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/6333' 2>/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  mcp-memory:
+    build:
+      context: ./server
+    image: openclaw-memory:0.1.0
+    container_name: openclaw-mcp-memory
+    restart: unless-stopped
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    environment:
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
+      OLLAMA_URL: ${OLLAMA_URL:-https://ollama.com}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-openclaw_memory}
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8765
+      DEFAULT_NAMESPACE: ${DEFAULT_NAMESPACE:-default}
+    ports:
+      - "${MCP_PORT:-8765}:8765"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  qdrant-data:

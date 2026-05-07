@@ -1,181 +1,88 @@
-# Auto-Sync Pipeline - Technical Spec
+# Arquitectura
 
-## Overview
-Automated pipeline to sync episodic memory (Markdown files) → semantic memory (Qdrant vectors).
+## Decisiones de diseño
 
-## Architecture
+### Vertical slice
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  memory/*.md   │────▶│  sync-memory   │────▶│   Qdrant        │
-│  (episódica)   │     │  script        │     │  (semántica)     │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-        │                                              ▲
-        │                                              │
-        └──────────────────────────────────────────────────────┘
-                           │
-                           ┌──────────────────┐
-                           │  memory-hook.js  │
-                           │  MCP Server      │
-                           │  • memory_add    │
-                           │  • memory_sync   │
-                           │  • memory_search │
-                           │  • memory_delete │
-                           │  • memory_stats  │
-                           └──────────────────┘
-                                    ▲
-                           OpenClaw (real-time)
+server/src/openclaw_memory/
+├── server.py                 # composition root: wiring FastMCP + dependencias
+├── shared/                   # solo lo verdaderamente compartido
+│   ├── config.py             # pydantic-settings, .env
+│   ├── embeddings.py         # OllamaEmbeddings (httpx)
+│   ├── store.py              # QdrantStore (qdrant-client async)
+│   └── types.py              # Memory + Protocols (EmbeddingsClient, MemoryStore)
+└── tools/                    # 1 carpeta = 1 slice MCP
+    ├── save/handler.py       # SaveInput + async save(...)
+    ├── search/handler.py
+    ├── delete/handler.py
+    ├── list_/handler.py
+    ├── update/handler.py
+    ├── recent/handler.py
+    └── stats/handler.py
 ```
 
-## Components
+Cada slice es **una función pura** que recibe sus dependencias por keyword arguments. Esto significa:
 
-### 1. sync-memory.sh (DevOps)
-- **Purpose**: Batch sync markdown files to Qdrant
-- **Trigger**: Manual, cron, or post-session
-- **Algorithm**:
-  ```
-  1. List all .md files in /memory/
-  2. Parse headers (##, ###)
-  3. For each section:
-     a. Generate ID with UUID v4
-     b. Generate embedding via nomic-embed-text
-     c. Upsert to Qdrant with metadata
-     d. Log results
-  ```
+- **Test unitario sin Docker**: `pytest tests/unit` corre con un `FakeStore` y `FakeEmbeddings` in-memory. 16 tests, <0.3s.
+- **Añadir una tool nueva**: una carpeta nueva en `tools/`, un decorador `@mcp.tool` en `server.py`. Cero acoplamiento con las existentes (OCP).
 
-### 2. memory-hook.js (Backend)
-- **Purpose**: Real-time memory management
-- **Methods**:
-  - `memory_add`: Add single fact
-  - `memory_sync`: Sync specific file
-  - `memory_search`: Semantic search with filters
-  - `memory_delete`: Delete by ID or query
-  - `memory_stats`: Collection statistics
-- **Integration**: MCP server for OpenClaw
+### SOLID, sin sobreingeniería
 
-### 3. validate.sh (QA)
-- **Purpose**: Integration tests
-- **Coverage**:
-  - Qdrant connectivity
-  - Embedding proxy health
-  - Script functionality
-  - Hook API compliance (all 5 tools)
+- **SRP**: cada handler hace una cosa. `EmbeddingsClient` solo embebe. `MemoryStore` solo persiste.
+- **DIP**: handlers dependen de `Protocol` (`EmbeddingsClient`, `MemoryStore`), no de `OllamaEmbeddings`/`QdrantStore`. Por eso los fakes son triviales — no requieren herencia.
+- **OCP**: `tools/` es abierto a extensión, cerrado a modificación. Añadir una tool ≠ tocar otras.
+- **Sin** factories, builders, registries dinámicos. Wiring explícito en `server.build_app`.
 
-## Data Flow
+### KISS + YAGNI
 
-### ID Generation
-```javascript
-// UUID v4 estándar para pointIds válidos
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+- Una sola colección Qdrant; namespaces se filtran por payload con índice keyword. Sin colecciones por namespace ni por usuario. Suficiente hasta los millones de vectores.
+- `recent` y `stats` no usan agregaciones nativas de Qdrant — un `scroll` + sort en Python es legible y rápido para volúmenes humanos. Se puede optimizar el día que importe (no antes).
+- El servidor expone solo `streamable-http`. stdio se añade cuando un usuario real lo pida.
+- Modelo de embeddings inyectable vía `.env`, dimensión también. No hay "registry de modelos".
+
+### Tests
+
+- **Unit (16)**: `tests/unit/tools/` — 1 archivo por slice, cubre happy path + 1-2 edge cases. Usan `FakeStore` y `FakeEmbeddings` (cosine sobre vector determinista de SHA-256, 16 dims).
+- **Integration (futuro)**: `tests/integration/test_e2e.py` — levanta `docker compose`, hace MCP requests, verifica round-trip. Marcado `@pytest.mark.integration`, no corre por defecto.
+
+### Datos
+
+```
+Memory {
+  id: UUID
+  content: str
+  namespace: str
+  tags: list[str]
+  metadata: dict
+  created_at, updated_at: datetime UTC
+  score: float | None  # solo en respuestas de search
 }
 ```
 
-### Vector Dimensions
-- **nomic-embed-text**: 768 dimensions
-- **Distance**: Cosine similarity
-- **Collections**: memory_facts, memory_incidents, test_memory_points
+En Qdrant: vector + payload con todos los campos excepto `id` (que es el id del point) y `score` (calculado al buscar). `created_at`/`updated_at` se serializan como floats (epoch seconds) para indexar fácilmente.
 
-### Metadata Schema
-```json
-{
-  "id": "uuid-v4",
-  "text": "content for embedding",
-  "source": "memory_hook",
-  "timestamp": "2026-02-26T12:33:00Z",
-  "text_preview": "Texto de la memoria..."
-}
-```
+### Flujo `memory_save`
 
-## Cron Schedule
+1. Cliente MCP llama `memory_save(content, namespace?, tags?, metadata?)`.
+2. Handler valida (Pydantic) y rechaza contenido vacío.
+3. Genera UUID v4 y timestamps.
+4. Llama `embeddings.embed(content)` → vector de `EMBEDDING_DIM` floats.
+5. `store.save(memory, vector)` hace `upsert` en Qdrant.
+6. Devuelve la `Memory` resultante al cliente.
 
-```cron
-# Sync episodic memory every 6 hours
-0 */6 * * * /root/workspace/scratch/2026-02-25/memory-auto-sync/sync-memory.sh -v >> /var/log/memory-sync.log 2>&1
-```
+### Flujo `memory_search`
 
-## Validation Checklist
+1. Cliente llama `memory_search(query, namespace?, limit, min_score)`.
+2. `embeddings.embed(query)` → vector.
+3. `store.search(...)` ejecuta `query_points` con `score_threshold` y filtro por `namespace` (índice keyword).
+4. Devuelve `[Memory]` ordenadas por similitud descendente, cada una con `score`.
 
-- [x] Script generates valid embeddings
-- [x] Qdrant accepts 768-dim vectors
-- [x] Hook responds to MCP calls (all 5 tools)
-- [x] Deduplication works (UUID v4 unique)
-- [x] Tests pass (6/6 QA tests)
-- [x] Delete endpoint correct (POST /collections/{collection}/points/delete)
+## No-goals (por ahora)
 
-## Rollback
+- **Multi-usuario / multi-tenant**: el repo asume "una persona, una máquina". Aislamiento entre proyectos = namespaces.
+- **Auth/ACL**: solo escucha en `localhost`. Si publicas el puerto a internet, eres responsable de poner un proxy con auth.
+- **Soporte multimodal** (imágenes, PDF como blobs).
+- **Sync entre máquinas**. Backup manual con `tar` del volumen Qdrant es suficiente para 99% de casos.
 
-If issues detected:
-```bash
-# Restore from backup
-curl -X POST http://localhost:6333/collections/memory_facts/snapshot/restore \
-  -d '{"snapshot_name": "pre-sync-backup"}'
-```
-
-## MCP Tools Specification
-
-### memory_add
-- **Purpose**: Add single memory to Qdrant
-- **Parameters**: collection, text, metadata, source
-- **Returns**: { success, pointId, collection, message }
-
-### memory_sync
-- **Purpose**: Sync entire markdown file to Qdrant
-- **Parameters**: date, file_path
-- **Returns**: { success, message, details: { added, failed, sections } }
-
-### memory_search
-- **Purpose**: Semantic search with metadata filters
-- **Parameters**: collection, text, limit, score_threshold, filter
-- **Returns**: { success, collection, query, count, results: [ { id, score, text, metadata } ] }
-
-### memory_delete
-- **Purpose**: Delete by ID or semantic query
-- **Parameters**: collection, point_id OR query, limit, score_threshold
-- **Returns**: { success, collection, pointId OR deleted, pointIds }
-
-### memory_stats
-- **Purpose**: Get collection statistics
-- **Parameters**: collection
-- **Returns**: { success, collection, exists, points_count, segments_count, status, config }
-
-## Bug Fixes Implemented
-
-| ID | Bug | Fix |
-|----|-----|-----|
-| BUG-001 | Endpoint DELETE eliminaba toda la colección | Corregido a `POST /collections/{collection}/points/delete` |
-| BUG-002 | Validación incorrecta en DELETE | Cambiado a `data.status === 'ok'` |
-| BUG-003 | Variable de entorno incorrecta | Corregido a `EMBEDDING_PROXY_URL` |
-| BUG-004 | PointId string inválido | Implementado `generateUUID()` con UUID v4 |
-
-## Modelos y Tecnologías
-
-### Embeddings
-- **Modelo**: nomic-embed-text (por defecto)
-- **Dimensión**: 768
-- **Alternativo**: mxbai-embed-large (1024 dimensiones)
-- **Proxy**: localhost:11436
-
-### Servicios
-- **Qdrant**: localhost:6333
-- **Embedding Proxy**: localhost:11436
-
-### LLM
-- **Principal**: zai/glm-4.7 (Qwen3-Coder-Next)
-- **Alternativo**: ollama/qwen3-coder-next:cloud
-
-## References
-
-- Toolplaybook: /root/.openclaw/workspace/docs/TOOLPLAYBOOK.md
-- hook/README.md: Documentación completa de las 5 herramientas
-- Qdrant API: https://qdrant.tech/documentation/
-- MCP Spec: https://modelcontextprotocol.io/
-
----
-
-**Last Updated**: 2026-02-26
-**Commit**: da6bb45 - docs: actualizar README principal
+Si alguno de estos se vuelve necesario, abre un issue con caso de uso real (no especulativo).
