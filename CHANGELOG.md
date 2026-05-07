@@ -23,7 +23,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Reescritura completa: de Node.js stdio a Python MCP HTTP
 
-Primera versión publicable. La implementación previa en Node.js se conserva en [`legacy/`](legacy/) como referencia, pero ya no recibe mantenimiento.
+Primera versión publicable. La implementación previa en Node.js se eliminó del árbol vivo — su trazabilidad permanece en el git history (`git log --before=2026-05-07`).
 
 ### Added
 - Servidor MCP en **Python 3.11** con [FastMCP](https://gofastmcp.com) (Streamable HTTP, `:8765/mcp`).
@@ -61,9 +61,9 @@ Clean Code · SOLID (DIP con `Protocol`) · KISS · YAGNI · Vertical slice · T
 
 ---
 
-## [Legacy] — 2026-02-26 (Node.js, deprecado)
+## [Legacy] — 2026-02-26 (Node.js, eliminado del árbol)
 
-Primera implementación. Se conserva en [`legacy/`](legacy/) por trazabilidad. Ya no recibe mantenimiento.
+Primera implementación. **Eliminada del repo en 2026-05-07** (commit posterior). El código vive en el git history: `git log --all -- 'legacy/**'` lo recupera para inspección histórica.
 
 ### Highlights de la versión legacy
 - Node.js, MCP **stdio** (`hook/memory-hook.js`, ~580 líneas).

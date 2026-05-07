@@ -239,7 +239,6 @@ ruff check src tests
 - [`docs/CLIENTS.md`](docs/CLIENTS.md) — config para Claude Code, OpenCode, Cursor, Continue.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — decisiones técnicas y por qué.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — disciplinas, workflow, cómo añadir una tool.
-- [`legacy/`](legacy/) — primera implementación en Node (deprecada, se conserva como referencia).
 
 ---
 
